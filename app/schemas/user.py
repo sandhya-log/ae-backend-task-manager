@@ -13,4 +13,8 @@ class UserCreate(BaseModel):
             raise ValueError("Password too short (min 8 charcaters)")
         
         return v
+    
+class UserLogin(BaseModel):
+    email: EmailStr
+    password : str
 
