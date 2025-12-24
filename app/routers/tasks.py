@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List
 from fastapi import HTTPException
 
+
 from app.database.db import get_db
 from app.database.models import Task, User
-from app.schemas.task import TaskCreate,TaskResponse
+from app.schemas.task import TaskCreate,TaskResponse, TaskUpdate
 from app.dependencies.auth import get_current_user
 
 
@@ -80,3 +81,73 @@ def get_task(
         )
     
     return task
+
+@router.put(
+    "/{task_id}",
+    response_model=TaskResponse
+)
+
+def update_task(
+    task_id: int,
+    task_update: TaskUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    task = (
+        db.query(Task)
+        .filter(
+            Task.id == task_id,
+            Task.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail= "Task not found"
+        )
+    
+    if task_update.title is not None:
+        task.title = task_update.title
+
+    if task_update.description is not None:
+        task.description = task_update.description
+
+    if task_update.completed is not None:
+        task.completed = task_update.completed
+
+    db.commit()
+    db.refresh(task)
+
+    return task
+
+
+@router.delete(
+    "/{task_id}",
+    status_code=200
+)  
+def delete_task(
+    task_id : int,
+    db: Session = Depends(get_db),
+    current_user:User = Depends(get_current_user),
+):
+    task = (
+        db.query(Task)
+        .filter(
+            Task.id == task_id,
+            Task.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+    
+    db.delete(task)
+    db.commit()
+
+    return {"message" : "Task deleted"}
