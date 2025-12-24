@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+from typing import List
 
 from app.database.db import get_db
 from app.database.models import Task, User
@@ -34,3 +35,20 @@ def create_task(
     db.refresh(new_task)
 
     return new_task
+
+@router.get(
+    "",
+    response_model=List[TaskResponse]
+)
+
+def get_tasks(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tasks = (
+        db.query(Task)
+        .filter(Task.user_id == current_user.id)
+        .all()
+    )
+
+    return tasks
